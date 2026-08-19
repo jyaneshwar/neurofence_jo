@@ -216,3 +216,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# NeuroFence project files
+
+# Generated logs
+logs/*
+!logs/.gitkeep
+
+# Generated reports
+reports/*
+!reports/.gitkeep
+
+# Large LLM model files
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.onnx
