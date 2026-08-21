@@ -1,5 +1,7 @@
 """
 NeuroFence visual theme.
+
+Central stylesheet for the NeuroFence desktop application.
 """
 
 from PyQt6.QtGui import QFont
@@ -11,9 +13,11 @@ class DarkTheme:
 
     @staticmethod
     def stylesheet() -> str:
+        """Return the complete NeuroFence Qt stylesheet."""
+
         return """
         /* =========================================================
-           GLOBAL
+           GLOBAL APPLICATION
            ========================================================= */
 
         QWidget {
@@ -115,7 +119,7 @@ class DarkTheme:
         }
 
         /* =========================================================
-           CONTENT
+           MAIN CONTENT AREA
            ========================================================= */
 
         #ContentArea {
@@ -134,7 +138,7 @@ class DarkTheme:
         }
 
         /* =========================================================
-           CARDS
+           INFORMATION CARDS
            ========================================================= */
 
         #InfoCard {
@@ -166,13 +170,17 @@ class DarkTheme:
         }
 
         /* =========================================================
-           PANELS
+           GENERAL PANELS
            ========================================================= */
 
         #Panel {
             background-color: #10151C;
             border: 1px solid #202731;
             border-radius: 10px;
+        }
+
+        #Panel:hover {
+            border: 1px solid #28313C;
         }
 
         #PanelTitle {
@@ -197,7 +205,7 @@ class DarkTheme:
 
         #PrimaryButton {
             background-color: #2F81D8;
-            color: white;
+            color: #FFFFFF;
             border: none;
             border-radius: 7px;
             padding: 10px 18px;
@@ -231,8 +239,37 @@ class DarkTheme:
         }
 
         /* =========================================================
-           STATUS
+           PROGRESS BAR
            ========================================================= */
+
+        QProgressBar {
+            background-color: #171D25;
+            border: 1px solid #252D37;
+            border-radius: 4px;
+            min-height: 7px;
+            max-height: 7px;
+        }
+
+        QProgressBar::chunk {
+            background-color: #3B8EDB;
+            border-radius: 4px;
+        }
+
+        /* =========================================================
+           THREAT STATES
+           ========================================================= */
+
+        #ThreatLow {
+            color: #65D391;
+        }
+
+        #ThreatMedium {
+            color: #E6B85C;
+        }
+
+        #ThreatHigh {
+            color: #E36A6A;
+        }
 
         #StatusGreen {
             color: #65D391;
@@ -247,36 +284,151 @@ class DarkTheme:
         }
 
         /* =========================================================
+           THREAT GAUGE
+           ========================================================= */
+
+        #ThreatGauge {
+            background-color: transparent;
+        }
+
+        /* =========================================================
            SCROLLBAR
            ========================================================= */
 
         QScrollBar:vertical {
-            background: #0A0D12;
+            background-color: #0A0D12;
             width: 7px;
             border: none;
+            margin: 0;
         }
 
         QScrollBar::handle:vertical {
-            background: #29313B;
+            background-color: #29313B;
             border-radius: 3px;
             min-height: 30px;
         }
 
         QScrollBar::handle:vertical:hover {
-            background: #37414D;
+            background-color: #37414D;
         }
 
         QScrollBar::add-line:vertical,
         QScrollBar::sub-line:vertical {
             height: 0px;
         }
+
+        /* =========================================================
+           HORIZONTAL SCROLLBAR
+           ========================================================= */
+
+        QScrollBar:horizontal {
+            background-color: #0A0D12;
+            height: 7px;
+            border: none;
+        }
+
+        QScrollBar::handle:horizontal {
+            background-color: #29313B;
+            border-radius: 3px;
+            min-width: 30px;
+        }
+
+        QScrollBar::handle:horizontal:hover {
+            background-color: #37414D;
+        }
+
+        QScrollBar::add-line:horizontal,
+        QScrollBar::sub-line:horizontal {
+            width: 0px;
+        }
+
+        /* =========================================================
+           INPUT FIELDS
+           ========================================================= */
+
+        QLineEdit {
+            background-color: #10151C;
+            color: #E6EAF0;
+            border: 1px solid #252D37;
+            border-radius: 7px;
+            padding: 9px 11px;
+            selection-background-color: #2F81D8;
+        }
+
+        QLineEdit:focus {
+            border: 1px solid #3B8EDB;
+        }
+
+        /* =========================================================
+           COMBO BOX
+           ========================================================= */
+
+        QComboBox {
+            background-color: #10151C;
+            color: #E6EAF0;
+            border: 1px solid #252D37;
+            border-radius: 7px;
+            padding: 9px 11px;
+        }
+
+        QComboBox:hover {
+            border: 1px solid #34404D;
+        }
+
+        QComboBox:focus {
+            border: 1px solid #3B8EDB;
+        }
+
+        QComboBox QAbstractItemView {
+            background-color: #10151C;
+            color: #E6EAF0;
+            border: 1px solid #252D37;
+            selection-background-color: #172231;
+            selection-color: #6DB3FF;
+        }
+
+        /* =========================================================
+           TABLES
+           ========================================================= */
+
+        QTableWidget,
+        QTableView {
+            background-color: #10151C;
+            alternate-background-color: #0D1218;
+            color: #DCE2E8;
+            border: 1px solid #202731;
+            gridline-color: #202731;
+        }
+
+        QHeaderView::section {
+            background-color: #0D1117;
+            color: #7D8793;
+            border: none;
+            border-bottom: 1px solid #202731;
+            padding: 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* =========================================================
+           TOOLTIP
+           ========================================================= */
+
+        QToolTip {
+            background-color: #171D25;
+            color: #E6EAF0;
+            border: 1px solid #303A46;
+            padding: 6px;
+        }
         """
 
     @classmethod
     def apply(cls, application: QApplication) -> None:
-        """Apply the NeuroFence theme."""
+        """Apply the NeuroFence theme to the application."""
 
         application.setStyle("Fusion")
         application.setStyleSheet(cls.stylesheet())
 
-        application.setFont(QFont("Segoe UI", 10))
+        application.setFont(
+            QFont("Segoe UI", 10)
+        )
