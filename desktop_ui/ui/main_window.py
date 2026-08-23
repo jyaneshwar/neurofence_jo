@@ -1,16 +1,28 @@
 """
-NeuroFence main application window.
+NeuroFence - Main Window
 
-Day 3:
-Professional security dashboard and application navigation.
+Contains:
+- Main application window
+- Sidebar navigation
+- Dashboard
+- Model Loader
+- Security Scan placeholder
+- Activation Tracker placeholder
+- Reports placeholder
+- Settings placeholder
 """
+
+from pathlib import Path
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QStackedWidget,
     QVBoxLayout,
@@ -22,32 +34,41 @@ from desktop_ui.components.threat_gauge import ThreatGauge
 from desktop_ui.components.activity_panel import ActivityPanel
 from desktop_ui.components.scan_status import ScanStatus
 
+from model_loader.validator import ModelValidator
+
+
+# ================================================================
+# SIDEBAR
+# ================================================================
 
 class Sidebar(QFrame):
-    """Professional NeuroFence navigation sidebar."""
 
     def __init__(self, navigation_callback, parent=None):
         super().__init__(parent)
 
-        self.setObjectName("Sidebar")
-        self.setFixedWidth(218)
-
         self.navigation_callback = navigation_callback
-        self.navigation_buttons = []
 
-        self._build_ui()
+        self.setObjectName("Sidebar")
+        self.setFixedWidth(220)
 
-    def _build_ui(self):
-        """Build the sidebar."""
+        self.buttons = []
+
+        self.build_ui()
+
+    def build_ui(self):
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 22, 14, 18)
+
+        layout.setContentsMargins(
+            14,
+            22,
+            14,
+            18,
+        )
+
         layout.setSpacing(5)
 
-        # ---------------------------------------------------------
-        # Branding
-        # ---------------------------------------------------------
-
+        # Brand
         brand = QLabel("NEUROFENCE")
         brand.setObjectName("BrandTitle")
 
@@ -59,14 +80,11 @@ class Sidebar(QFrame):
 
         layout.addSpacing(30)
 
-        # ---------------------------------------------------------
-        # Overview section
-        # ---------------------------------------------------------
+        # Navigation heading
+        heading = QLabel("OVERVIEW")
+        heading.setObjectName("SectionLabel")
 
-        overview = QLabel("OVERVIEW")
-        overview.setObjectName("SectionLabel")
-
-        layout.addWidget(overview)
+        layout.addWidget(heading)
 
         navigation_items = [
             ("Dashboard", 0),
@@ -77,91 +95,101 @@ class Sidebar(QFrame):
         ]
 
         for text, index in navigation_items:
+
             button = QPushButton(text)
 
-            button.setObjectName("NavigationButton")
+            button.setObjectName(
+                "NavigationButton"
+            )
+
             button.setCheckable(True)
+
             button.setMinimumHeight(40)
+
             button.setCursor(
                 Qt.CursorShape.PointingHandCursor
             )
 
             button.clicked.connect(
                 lambda checked=False, i=index:
-                self._navigate(i)
+                self.navigate(i)
             )
 
             layout.addWidget(button)
 
-            self.navigation_buttons.append(button)
+            self.buttons.append(button)
 
-        # ---------------------------------------------------------
         # System section
-        # ---------------------------------------------------------
+        layout.addSpacing(22)
 
-        layout.addSpacing(24)
+        system_label = QLabel("SYSTEM")
+        system_label.setObjectName("SectionLabel")
 
-        system = QLabel("SYSTEM")
-        system.setObjectName("SectionLabel")
+        layout.addWidget(system_label)
 
-        layout.addWidget(system)
+        settings_button = QPushButton("Settings")
 
-        settings = QPushButton("Settings")
+        settings_button.setObjectName(
+            "NavigationButton"
+        )
 
-        settings.setObjectName("NavigationButton")
-        settings.setCheckable(True)
-        settings.setMinimumHeight(40)
-        settings.setCursor(
+        settings_button.setCheckable(True)
+
+        settings_button.setMinimumHeight(40)
+
+        settings_button.setCursor(
             Qt.CursorShape.PointingHandCursor
         )
 
-        settings.clicked.connect(
-            lambda: self._navigate(5)
+        settings_button.clicked.connect(
+            lambda: self.navigate(5)
         )
 
-        layout.addWidget(settings)
+        layout.addWidget(settings_button)
 
-        self.navigation_buttons.append(settings)
-
-        # ---------------------------------------------------------
-        # Bottom section
-        # ---------------------------------------------------------
+        self.buttons.append(settings_button)
 
         layout.addStretch()
 
+        # Bottom status
         status = QLabel("●  SYSTEM SECURE")
         status.setObjectName("StatusGreen")
 
-        version = QLabel("NeuroFence  •  v0.1.0")
+        version = QLabel(
+            "NeuroFence • v0.1.0"
+        )
+
         version.setObjectName("VersionLabel")
 
         layout.addWidget(status)
         layout.addWidget(version)
 
-        # Dashboard selected by default
-        self.navigation_buttons[0].setChecked(True)
+        self.buttons[0].setChecked(True)
 
-    def _navigate(self, index):
-        """Navigate to a page."""
+    def navigate(self, index):
 
-        for button_index, button in enumerate(
-            self.navigation_buttons
+        for i, button in enumerate(
+            self.buttons
         ):
             button.setChecked(
-                button_index == index
+                i == index
             )
 
         self.navigation_callback(index)
 
 
+# ================================================================
+# TOP BAR
+# ================================================================
+
 class TopBar(QFrame):
-    """Application top navigation bar."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setObjectName("TopBar")
-        self.setFixedHeight(62)
+
+        self.setFixedHeight(64)
 
         layout = QHBoxLayout(self)
 
@@ -172,54 +200,72 @@ class TopBar(QFrame):
             0,
         )
 
-        # ---------------------------------------------------------
-        # Title
-        # ---------------------------------------------------------
-
         title_box = QVBoxLayout()
+
         title_box.setSpacing(1)
 
-        title = QLabel("Security Overview")
-        title.setObjectName("TopTitle")
+        self.title = QLabel(
+            "Security Overview"
+        )
 
-        subtitle = QLabel(
+        self.title.setObjectName(
+            "TopTitle"
+        )
+
+        self.subtitle = QLabel(
             "Model security monitoring"
         )
-        subtitle.setObjectName("TopSubtitle")
 
-        title_box.addWidget(title)
-        title_box.addWidget(subtitle)
+        self.subtitle.setObjectName(
+            "TopSubtitle"
+        )
 
-        layout.addLayout(title_box)
+        title_box.addWidget(
+            self.title
+        )
+
+        title_box.addWidget(
+            self.subtitle
+        )
+
+        layout.addLayout(
+            title_box
+        )
 
         layout.addStretch()
 
-        # ---------------------------------------------------------
-        # System status
-        # ---------------------------------------------------------
+        badge = QLabel(
+            "●  SYSTEM SECURE"
+        )
 
-        badge = QLabel("●  SYSTEM SECURE")
-        badge.setObjectName("SecureBadge")
+        badge.setObjectName(
+            "SecureBadge"
+        )
 
         layout.addWidget(badge)
 
+    def set_page_title(
+        self,
+        title,
+        subtitle,
+    ):
+
+        self.title.setText(title)
+        self.subtitle.setText(subtitle)
+
+
+# ================================================================
+# DASHBOARD PAGE
+# ================================================================
 
 class DashboardPage(QWidget):
-    """
-    Main NeuroFence security dashboard.
-
-    This page currently displays UI state and placeholder
-    security information. Real model/scanner data will be
-    connected in later development days.
-    """
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._build_ui()
+        self.build_ui()
 
-    def _build_ui(self):
-        """Build dashboard layout."""
+    def build_ui(self):
 
         layout = QVBoxLayout(self)
 
@@ -232,28 +278,30 @@ class DashboardPage(QWidget):
 
         layout.setSpacing(16)
 
-        # =========================================================
-        # PAGE HEADER
-        # =========================================================
-
+        # Header
         title = QLabel("Dashboard")
-        title.setObjectName("PageTitle")
+
+        title.setObjectName(
+            "PageTitle"
+        )
 
         subtitle = QLabel(
-            "Monitor the security posture of your loaded "
-            "language model."
+            "Monitor the security posture of your language model."
         )
-        subtitle.setObjectName("PageSubtitle")
+
+        subtitle.setObjectName(
+            "PageSubtitle"
+        )
+
+        subtitle.setWordWrap(True)
 
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
-        # =========================================================
-        # INFORMATION CARDS
-        # =========================================================
+        # Cards
+        cards = QHBoxLayout()
 
-        cards_layout = QHBoxLayout()
-        cards_layout.setSpacing(12)
+        cards.setSpacing(12)
 
         self.model_card = InfoCard(
             "MODEL",
@@ -279,139 +327,132 @@ class DashboardPage(QWidget):
             "No suspicious activity",
         )
 
-        cards_layout.addWidget(
+        cards.addWidget(
             self.model_card
         )
 
-        cards_layout.addWidget(
+        cards.addWidget(
             self.scan_card
         )
 
-        cards_layout.addWidget(
+        cards.addWidget(
             self.threat_card
         )
 
-        cards_layout.addWidget(
+        cards.addWidget(
             self.status_card
         )
 
-        layout.addLayout(cards_layout)
+        layout.addLayout(cards)
 
-        # =========================================================
-        # MIDDLE SECTION
-        # =========================================================
+        # Middle section
+        middle = QHBoxLayout()
 
-        middle_layout = QHBoxLayout()
-        middle_layout.setSpacing(14)
-
-        # ---------------------------------------------------------
-        # Activity panel
-        # ---------------------------------------------------------
+        middle.setSpacing(14)
 
         self.activity_panel = ActivityPanel()
 
-        # ---------------------------------------------------------
-        # Threat assessment panel
-        # ---------------------------------------------------------
+        threat_panel = QFrame()
 
-        gauge_panel = QFrame()
-        gauge_panel.setObjectName("Panel")
-
-        gauge_layout = QVBoxLayout(
-            gauge_panel
+        threat_panel.setObjectName(
+            "Panel"
         )
 
-        gauge_layout.setContentsMargins(
+        threat_layout = QVBoxLayout(
+            threat_panel
+        )
+
+        threat_layout.setContentsMargins(
             20,
             18,
             20,
             18,
         )
 
-        gauge_layout.setSpacing(6)
+        threat_layout.setSpacing(6)
 
-        gauge_title = QLabel(
+        threat_title = QLabel(
             "Threat Assessment"
         )
 
-        gauge_title.setObjectName(
+        threat_title.setObjectName(
             "PanelTitle"
         )
 
-        gauge_subtitle = QLabel(
+        threat_subtitle = QLabel(
             "Current model security score"
         )
 
-        gauge_subtitle.setObjectName(
+        threat_subtitle.setObjectName(
             "PanelSubtitle"
         )
 
-        self.threat_gauge = ThreatGauge(
-            0
+        self.threat_gauge = ThreatGauge(0)
+
+        threat_layout.addWidget(
+            threat_title
         )
 
-        gauge_layout.addWidget(
-            gauge_title
+        threat_layout.addWidget(
+            threat_subtitle
         )
 
-        gauge_layout.addWidget(
-            gauge_subtitle
-        )
-
-        gauge_layout.addWidget(
+        threat_layout.addWidget(
             self.threat_gauge,
             1,
         )
 
-        middle_layout.addWidget(
+        middle.addWidget(
             self.activity_panel,
             3,
         )
 
-        middle_layout.addWidget(
-            gauge_panel,
+        middle.addWidget(
+            threat_panel,
             2,
         )
 
         layout.addLayout(
-            middle_layout,
+            middle,
             1,
         )
 
-        # =========================================================
-        # SCAN STATUS
-        # =========================================================
-
+        # Scan status
         self.scan_status = ScanStatus()
 
         layout.addWidget(
             self.scan_status
         )
 
-    # =============================================================
-    # DASHBOARD UPDATE METHODS
-    # =============================================================
-
-    def update_model(self, model_name: str):
-        """Update the loaded model displayed on the dashboard."""
+    def update_model(
+        self,
+        model_name,
+    ):
 
         self.model_card.set_value(
             model_name
         )
 
-        self.activity_panel.add_activity(
-            f"Model loaded: {model_name}"
-        )
+        try:
+            self.activity_panel.add_activity(
+                f"Model selected: {model_name}"
+            )
+        except AttributeError:
+            pass
 
-    def update_scan_count(self, count: int):
-        """Update number of completed scans."""
+    def update_scan_count(
+        self,
+        count,
+    ):
 
         self.scan_card.set_value(
             str(count)
         )
 
-    def update_threat_score(self, score: int):
-        """Update the dashboard threat score."""
+    def update_threat_score(
+        self,
+        score,
+    ):
 
         score = max(
             0,
@@ -428,10 +469,6 @@ class DashboardPage(QWidget):
         self.threat_card.set_value(
             f"{score} / 100"
         )
-
-        # ---------------------------------------------------------
-        # Security status
-        # ---------------------------------------------------------
 
         if score < 30:
 
@@ -451,46 +488,576 @@ class DashboardPage(QWidget):
                 "CRITICAL"
             )
 
-    def update_scan_status(
-        self,
-        message: str,
-        progress: int,
-    ):
-        """Update scan status and progress."""
 
-        self.scan_status.set_status(
-            message
-        )
+# ================================================================
+# MODEL LOADER PAGE
+# ================================================================
 
-        self.scan_status.set_progress(
-            progress
-        )
-
-
-class PlaceholderPage(QWidget):
+class ModelLoaderPage(QWidget):
     """
-    Temporary page for modules that will be implemented later.
+    Day 4 Model Loader.
+
+    Select a local model directory and validate:
+    - config.json
+    - model weights
+    - tokenizer files
     """
 
     def __init__(
         self,
-        title: str,
-        description: str,
+        dashboard_page=None,
         parent=None,
     ):
+
         super().__init__(parent)
 
-        self._build_ui(
-            title,
-            description,
+        self.dashboard_page = dashboard_page
+
+        self.validator = ModelValidator()
+
+        self.selected_model_path = ""
+
+        self.build_ui()
+
+    # ------------------------------------------------------------
+    # BUILD UI
+    # ------------------------------------------------------------
+
+    def build_ui(self):
+
+        layout = QVBoxLayout(self)
+
+        layout.setContentsMargins(
+            28,
+            26,
+            28,
+            28,
         )
 
-    def _build_ui(
+        layout.setSpacing(16)
+
+        # Header
+        title = QLabel(
+            "Model Loader"
+        )
+
+        title.setObjectName(
+            "PageTitle"
+        )
+
+        subtitle = QLabel(
+            "Select and validate an LLM before security analysis."
+        )
+
+        subtitle.setObjectName(
+            "PageSubtitle"
+        )
+
+        subtitle.setWordWrap(True)
+
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+
+        # --------------------------------------------------------
+        # Selection panel
+        # --------------------------------------------------------
+
+        selection_panel = QFrame()
+
+        selection_panel.setObjectName(
+            "Panel"
+        )
+
+        selection_layout = QVBoxLayout(
+            selection_panel
+        )
+
+        selection_layout.setContentsMargins(
+            22,
+            20,
+            22,
+            20,
+        )
+
+        selection_layout.setSpacing(12)
+
+        directory_label = QLabel(
+            "MODEL DIRECTORY"
+        )
+
+        directory_label.setObjectName(
+            "SectionLabel"
+        )
+
+        selection_layout.addWidget(
+            directory_label
+        )
+
+        # Path row
+        path_row = QHBoxLayout()
+
+        path_row.setSpacing(10)
+
+        self.path_input = QLineEdit()
+
+        self.path_input.setPlaceholderText(
+            "Select a local model directory..."
+        )
+
+        self.path_input.setReadOnly(True)
+
+        self.path_input.setMinimumHeight(
+            42
+        )
+
+        path_row.addWidget(
+            self.path_input,
+            1,
+        )
+
+        self.browse_button = QPushButton(
+            "Browse"
+        )
+
+        self.browse_button.setObjectName(
+            "PrimaryButton"
+        )
+
+        self.browse_button.setMinimumWidth(
+            110
+        )
+
+        self.browse_button.setMinimumHeight(
+            42
+        )
+
+        self.browse_button.setCursor(
+            Qt.CursorShape.PointingHandCursor
+        )
+
+        self.browse_button.clicked.connect(
+            self.browse_model
+        )
+
+        path_row.addWidget(
+            self.browse_button
+        )
+
+        selection_layout.addLayout(
+            path_row
+        )
+
+        # Validate
+        self.validate_button = QPushButton(
+            "Validate Model"
+        )
+
+        self.validate_button.setObjectName(
+            "PrimaryButton"
+        )
+
+        self.validate_button.setMinimumHeight(
+            44
+        )
+
+        self.validate_button.setCursor(
+            Qt.CursorShape.PointingHandCursor
+        )
+
+        self.validate_button.setEnabled(False)
+
+        self.validate_button.clicked.connect(
+            self.validate_model
+        )
+
+        selection_layout.addWidget(
+            self.validate_button
+        )
+
+        layout.addWidget(
+            selection_panel
+        )
+
+        # --------------------------------------------------------
+        # Validation panel
+        # --------------------------------------------------------
+
+        result_panel = QFrame()
+
+        result_panel.setObjectName(
+            "Panel"
+        )
+
+        result_layout = QVBoxLayout(
+            result_panel
+        )
+
+        result_layout.setContentsMargins(
+            22,
+            20,
+            22,
+            20,
+        )
+
+        result_layout.setSpacing(10)
+
+        result_title = QLabel(
+            "Model Validation"
+        )
+
+        result_title.setObjectName(
+            "PanelTitle"
+        )
+
+        result_description = QLabel(
+            "NeuroFence checks the selected directory "
+            "before security analysis."
+        )
+
+        result_description.setObjectName(
+            "PanelSubtitle"
+        )
+
+        result_description.setWordWrap(True)
+
+        result_layout.addWidget(
+            result_title
+        )
+
+        result_layout.addWidget(
+            result_description
+        )
+
+        result_layout.addSpacing(8)
+
+        # Status labels
+        self.directory_status = QLabel(
+            "○ Directory not selected"
+        )
+
+        self.config_status = QLabel(
+            "○ config.json not checked"
+        )
+
+        self.weights_status = QLabel(
+            "○ Model weights not checked"
+        )
+
+        self.tokenizer_status = QLabel(
+            "○ Tokenizer not checked"
+        )
+
+        for label in (
+            self.directory_status,
+            self.config_status,
+            self.weights_status,
+            self.tokenizer_status,
+        ):
+
+            label.setObjectName(
+                "PanelSubtitle"
+            )
+
+            result_layout.addWidget(
+                label
+            )
+
+        result_layout.addSpacing(10)
+
+        self.final_result = QLabel(
+            "Waiting for model selection."
+        )
+
+        self.final_result.setObjectName(
+            "PanelSubtitle"
+        )
+
+        self.final_result.setWordWrap(True)
+
+        result_layout.addWidget(
+            self.final_result
+        )
+
+        result_layout.addStretch()
+
+        layout.addWidget(
+            result_panel,
+            1,
+        )
+
+    # ------------------------------------------------------------
+    # BROWSE
+    # ------------------------------------------------------------
+
+    def browse_model(self):
+
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Model Directory",
+        )
+
+        if not directory:
+            return
+
+        self.selected_model_path = directory
+
+        self.path_input.setText(
+            directory
+        )
+
+        self.validate_button.setEnabled(
+            True
+        )
+
+        self.directory_status.setText(
+            "✓ Directory selected"
+        )
+
+        self.directory_status.setObjectName(
+            "SuccessLabel"
+        )
+
+        self.config_status.setText(
+            "○ config.json not checked"
+        )
+
+        self.config_status.setObjectName(
+            "PanelSubtitle"
+        )
+
+        self.weights_status.setText(
+            "○ Model weights not checked"
+        )
+
+        self.weights_status.setObjectName(
+            "PanelSubtitle"
+        )
+
+        self.tokenizer_status.setText(
+            "○ Tokenizer not checked"
+        )
+
+        self.tokenizer_status.setObjectName(
+            "PanelSubtitle"
+        )
+
+        self.final_result.setText(
+            "Click 'Validate Model' to inspect this directory."
+        )
+
+        self.final_result.setObjectName(
+            "PanelSubtitle"
+        )
+
+        self.refresh_styles()
+
+    # ------------------------------------------------------------
+    # VALIDATE
+    # ------------------------------------------------------------
+
+    def validate_model(self):
+
+        if not self.selected_model_path:
+
+            QMessageBox.warning(
+                self,
+                "No Model Selected",
+                "Please select a model directory first.",
+            )
+
+            return
+
+        self.validate_button.setEnabled(
+            False
+        )
+
+        self.browse_button.setEnabled(
+            False
+        )
+
+        self.validate_button.setText(
+            "Validating..."
+        )
+
+        try:
+
+            result = self.validator.validate(
+                self.selected_model_path
+            )
+
+            # Config
+            if result.config_found:
+
+                self.config_status.setText(
+                    "✓ config.json found"
+                )
+
+                self.config_status.setObjectName(
+                    "SuccessLabel"
+                )
+
+            else:
+
+                self.config_status.setText(
+                    "✕ config.json not found"
+                )
+
+                self.config_status.setObjectName(
+                    "ErrorLabel"
+                )
+
+            # Weights
+            if result.weights_found:
+
+                self.weights_status.setText(
+                    "✓ Model weights found"
+                )
+
+                self.weights_status.setObjectName(
+                    "SuccessLabel"
+                )
+
+            else:
+
+                self.weights_status.setText(
+                    "✕ Model weights not found"
+                )
+
+                self.weights_status.setObjectName(
+                    "ErrorLabel"
+                )
+
+            # Tokenizer
+            if result.tokenizer_found:
+
+                self.tokenizer_status.setText(
+                    "✓ Tokenizer files found"
+                )
+
+                self.tokenizer_status.setObjectName(
+                    "SuccessLabel"
+                )
+
+            else:
+
+                self.tokenizer_status.setText(
+                    "⚠ Tokenizer files not found"
+                )
+
+                self.tokenizer_status.setObjectName(
+                    "WarningLabel"
+                )
+
+            # Final result
+            if result.valid:
+
+                self.final_result.setText(
+                    "✓ MODEL VALIDATION PASSED\n\n"
+                    "The selected directory contains the "
+                    "required configuration and model "
+                    "weight files."
+                )
+
+                self.final_result.setObjectName(
+                    "SuccessLabel"
+                )
+
+                # Update dashboard
+                if self.dashboard_page:
+
+                    model_name = Path(
+                        self.selected_model_path
+                    ).name
+
+                    self.dashboard_page.update_model(
+                        model_name
+                    )
+
+            else:
+
+                errors = "\n".join(
+                    f"• {error}"
+                    for error in result.errors
+                )
+
+                self.final_result.setText(
+                    "✕ MODEL VALIDATION FAILED\n\n"
+                    + errors
+                )
+
+                self.final_result.setObjectName(
+                    "ErrorLabel"
+                )
+
+            self.refresh_styles()
+
+        except Exception as error:
+
+            QMessageBox.critical(
+                self,
+                "Model Validation Error",
+                (
+                    "An unexpected error occurred "
+                    "while validating the model.\n\n"
+                    f"{error}"
+                ),
+            )
+
+        finally:
+
+            self.validate_button.setEnabled(
+                True
+            )
+
+            self.browse_button.setEnabled(
+                True
+            )
+
+            self.validate_button.setText(
+                "Validate Model"
+            )
+
+    # ------------------------------------------------------------
+    # STYLE REFRESH
+    # ------------------------------------------------------------
+
+    def refresh_styles(self):
+
+        widgets = [
+            self.directory_status,
+            self.config_status,
+            self.weights_status,
+            self.tokenizer_status,
+            self.final_result,
+        ]
+
+        for widget in widgets:
+
+            widget.style().unpolish(
+                widget
+            )
+
+            widget.style().polish(
+                widget
+            )
+
+            widget.update()
+
+
+# ================================================================
+# PLACEHOLDER PAGE
+# ================================================================
+
+class PlaceholderPage(QWidget):
+
+    def __init__(
         self,
-        title: str,
-        description: str,
+        title,
+        description,
+        parent=None,
     ):
-        """Build placeholder page."""
+
+        super().__init__(parent)
 
         layout = QVBoxLayout(self)
 
@@ -503,11 +1070,8 @@ class PlaceholderPage(QWidget):
 
         layout.setSpacing(18)
 
-        # ---------------------------------------------------------
-        # Page heading
-        # ---------------------------------------------------------
-
         title_label = QLabel(title)
+
         title_label.setObjectName(
             "PageTitle"
         )
@@ -520,9 +1084,7 @@ class PlaceholderPage(QWidget):
             "PageSubtitle"
         )
 
-        description_label.setWordWrap(
-            True
-        )
+        description_label.setWordWrap(True)
 
         layout.addWidget(
             title_label
@@ -532,12 +1094,11 @@ class PlaceholderPage(QWidget):
             description_label
         )
 
-        # ---------------------------------------------------------
-        # Placeholder panel
-        # ---------------------------------------------------------
-
         panel = QFrame()
-        panel.setObjectName("Panel")
+
+        panel.setObjectName(
+            "Panel"
+        )
 
         panel_layout = QVBoxLayout(
             panel
@@ -550,8 +1111,6 @@ class PlaceholderPage(QWidget):
             24,
         )
 
-        panel_layout.setSpacing(8)
-
         heading = QLabel(
             "Module ready for implementation"
         )
@@ -560,25 +1119,23 @@ class PlaceholderPage(QWidget):
             "PanelTitle"
         )
 
-        text = QLabel(
-            "This area is reserved for the "
-            "corresponding NeuroFence security workflow."
+        message = QLabel(
+            "This NeuroFence module will be connected "
+            "to the security pipeline in a later stage."
         )
 
-        text.setObjectName(
+        message.setObjectName(
             "PanelSubtitle"
         )
 
-        text.setWordWrap(
-            True
-        )
+        message.setWordWrap(True)
 
         panel_layout.addWidget(
             heading
         )
 
         panel_layout.addWidget(
-            text
+            message
         )
 
         panel_layout.addStretch()
@@ -589,10 +1146,14 @@ class PlaceholderPage(QWidget):
         )
 
 
+# ================================================================
+# MAIN WINDOW
+# ================================================================
+
 class MainWindow(QMainWindow):
-    """Main NeuroFence application window."""
 
     def __init__(self):
+
         super().__init__()
 
         self.setWindowTitle(
@@ -609,23 +1170,18 @@ class MainWindow(QMainWindow):
             650,
         )
 
-        self._build_ui()
+        self.build_ui()
 
-    def _build_ui(self):
-        """Build the main application layout."""
+    def build_ui(self):
 
-        # =========================================================
-        # CENTRAL WIDGET
-        # =========================================================
+        central = QWidget()
 
-        central_widget = QWidget()
-
-        central_widget.setObjectName(
+        central.setObjectName(
             "ContentArea"
         )
 
         root_layout = QHBoxLayout(
-            central_widget
+            central
         )
 
         root_layout.setContentsMargins(
@@ -637,22 +1193,20 @@ class MainWindow(QMainWindow):
 
         root_layout.setSpacing(0)
 
-        # =========================================================
-        # SIDEBAR
-        # =========================================================
-
-        sidebar = Sidebar(
-            navigation_callback=self._change_page
+        # Sidebar
+        self.sidebar = Sidebar(
+            navigation_callback=self.change_page
         )
 
-        # =========================================================
-        # MAIN CONTENT
-        # =========================================================
+        root_layout.addWidget(
+            self.sidebar
+        )
 
-        content_widget = QWidget()
+        # Content
+        content = QWidget()
 
         content_layout = QVBoxLayout(
-            content_widget
+            content
         )
 
         content_layout.setContentsMargins(
@@ -664,145 +1218,164 @@ class MainWindow(QMainWindow):
 
         content_layout.setSpacing(0)
 
-        # =========================================================
-        # TOP BAR
-        # =========================================================
-
-        top_bar = TopBar()
-
-        # =========================================================
-        # PAGE STACK
-        # =========================================================
-
-        self.page_stack = QStackedWidget()
-
-        self.page_stack.setObjectName(
-            "ContentArea"
-        )
-
-        self._create_pages()
-
-        # =========================================================
-        # ASSEMBLE CONTENT
-        # =========================================================
+        # Top bar
+        self.top_bar = TopBar()
 
         content_layout.addWidget(
-            top_bar
+            self.top_bar
         )
+
+        # Pages
+        self.page_stack = QStackedWidget()
+
+        self.create_pages()
 
         content_layout.addWidget(
             self.page_stack,
             1,
         )
 
-        # =========================================================
-        # ASSEMBLE MAIN WINDOW
-        # =========================================================
-
         root_layout.addWidget(
-            sidebar
-        )
-
-        root_layout.addWidget(
-            content_widget,
+            content,
             1,
         )
 
         self.setCentralWidget(
-            central_widget
+            central
         )
 
-    def _create_pages(self):
-        """Create application pages."""
+    # ------------------------------------------------------------
+    # CREATE PAGES
+    # ------------------------------------------------------------
 
-        # ---------------------------------------------------------
+    def create_pages(self):
+
         # Dashboard
-        # ---------------------------------------------------------
-
         self.dashboard_page = DashboardPage()
 
         self.page_stack.addWidget(
             self.dashboard_page
         )
 
-        # ---------------------------------------------------------
         # Model Loader
-        # ---------------------------------------------------------
-
-        model_loader_page = PlaceholderPage(
-            "Model Loader",
-            "Load and validate an LLM for security analysis.",
+        self.model_loader_page = ModelLoaderPage(
+            dashboard_page=self.dashboard_page
         )
 
         self.page_stack.addWidget(
-            model_loader_page
+            self.model_loader_page
         )
 
-        # ---------------------------------------------------------
         # Security Scan
-        # ---------------------------------------------------------
-
-        security_scan_page = PlaceholderPage(
-            "Security Scan",
-            "Analyze the selected model for suspicious behavior.",
-        )
-
         self.page_stack.addWidget(
-            security_scan_page
+            PlaceholderPage(
+                "Security Scan",
+                "Analyze the selected model for weight poisoning, "
+                "backdoors and suspicious behavior.",
+            )
         )
 
-        # ---------------------------------------------------------
-        # Activation Tracker
-        # ---------------------------------------------------------
-
-        activation_page = PlaceholderPage(
-            "Activation Tracker",
-            "Inspect model activation behavior and suspicious patterns.",
-        )
-
+        # Activations
         self.page_stack.addWidget(
-            activation_page
+            PlaceholderPage(
+                "Activation Tracker",
+                "Inspect model activation behavior and "
+                "identify suspicious activation patterns.",
+            )
         )
 
-        # ---------------------------------------------------------
         # Reports
-        # ---------------------------------------------------------
-
-        reports_page = PlaceholderPage(
-            "Reports",
-            "Review and export NeuroFence security findings.",
-        )
-
         self.page_stack.addWidget(
-            reports_page
+            PlaceholderPage(
+                "Reports",
+                "Review and export NeuroFence security findings.",
+            )
         )
 
-        # ---------------------------------------------------------
         # Settings
-        # ---------------------------------------------------------
-
-        settings_page = PlaceholderPage(
-            "Settings",
-            "Configure NeuroFence application preferences.",
-        )
-
         self.page_stack.addWidget(
-            settings_page
+            PlaceholderPage(
+                "Settings",
+                "Configure NeuroFence application preferences.",
+            )
         )
 
-    def _change_page(self, page_index: int):
-        """Switch the active application page."""
+    # ------------------------------------------------------------
+    # CHANGE PAGE
+    # ------------------------------------------------------------
 
-        if (
+    def change_page(
+        self,
+        page_index,
+    ):
+
+        if not (
             0 <= page_index
             < self.page_stack.count()
         ):
-            self.page_stack.setCurrentIndex(
+            return
+
+        self.page_stack.setCurrentIndex(
+            page_index
+        )
+
+        page_information = {
+
+            0: (
+                "Security Overview",
+                "Model security monitoring",
+            ),
+
+            1: (
+                "Model Loader",
+                "Select and validate a local LLM",
+            ),
+
+            2: (
+                "Security Scan",
+                "Analyze the selected model",
+            ),
+
+            3: (
+                "Activation Tracker",
+                "Monitor suspicious activations",
+            ),
+
+            4: (
+                "Security Reports",
+                "Review model security findings",
+            ),
+
+            5: (
+                "Settings",
+                "Configure NeuroFence",
+            ),
+        }
+
+        if page_index in page_information:
+
+            title, subtitle = page_information[
                 page_index
+            ]
+
+            self.top_bar.set_page_title(
+                title,
+                subtitle,
             )
 
 
-def create_main_window() -> MainWindow:
-    """Create and return the NeuroFence main window."""
+# ================================================================
+# CREATE MAIN WINDOW
+# ================================================================
+
+def create_main_window():
+    """
+    Factory function used by main.py.
+
+    Returns
+    -------
+    MainWindow
+        Configured NeuroFence main window.
+    """
 
     return MainWindow()

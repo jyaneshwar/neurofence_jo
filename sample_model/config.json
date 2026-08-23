@@ -1,0 +1,8 @@
+{
+    "model_type": "demo",
+    "architectures": [
+        "DemoModel"
+    ],
+    "hidden_size": 128,
+    "num_hidden_layers": 4
+}
